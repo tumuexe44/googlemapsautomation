@@ -1,0 +1,473 @@
+{
+  "name": "Places Otomasyon",
+  "nodes": [
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "region",
+              "value": "={{ $json.body.region }}"
+            },
+            {
+              "name": "alcohol_only",
+              "value": "={{ $json.body.alcohol_only }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1719ff45-3012-4532-aad4-ce92c08acb6b",
+      "name": "Set Region",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "textQuery",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "38606b3b-4d51-400e-a38a-681b790e2da9",
+      "name": "Build Query",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://places.googleapis.com/v1/places:searchText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-Api-Key",
+              "value": "YOUR_API_KEY"
+            },
+            {
+              "name": "X-Goog-FieldMask",
+              "value": "places.displayName,places.formattedAddress,places.priceLevel,places.rating,places.websiteUri,places.nationalPhoneNumber,places.googleMapsUri,places.location,places.regularOpeningHours"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "textQuery",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae036912-ad11-42fb-897e-0511ac09f3b9",
+      "name": "Google TextSearch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json[\"next_page_token\"] !== undefined }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "60a5ebf8-9b00-4613-8111-05b8f565d9b0",
+      "name": "Has Next Page?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "642889d7-281a-4fa4-8365-1ce4f41afa53",
+      "name": "Wait for Pagination",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -64
+      ],
+      "webhookId": "85c571d5-4dcc-4cac-a296-8561abe28434"
+    },
+    {
+      "parameters": {},
+      "id": "b67e8bb0-ecce-44ed-b589-df0c8cc1ce63",
+      "name": "Combine Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 1,
+      "position": [
+        400,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f5bb9b8d-f27c-4f39-9146-ad785fe4fccb",
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        608,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 0.2,
+        "unit": "seconds"
+      },
+      "id": "1c76a8fd-8940-4135-8e00-3e1414e5c23f",
+      "name": "Wait for Rate Limit",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        800,
+        112
+      ],
+      "webhookId": "abaaa72e-9f98-4e97-9260-01b484fedff9"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1024,
+        112
+      ],
+      "id": "74d524d5-fdd4-4008-b74a-14b42c2b8d73",
+      "name": "Telegram Trigger",
+      "webhookId": "6bbac425-7a65-4276-9108-f86ad60f3b97",
+      "credentials": {
+        "telegramApi": {
+          "id": "w51eB6RemCqzcyb8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/15XhgCmbxTyPxj2Rr6tyqOYHIP89rDkgDBhPc-8s9Yok/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/15XhgCmbxTyPxj2Rr6tyqOYHIP89rDkgDBhPc-8s9Yok/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name (İşletme Adı)": "={{ $json['Name (İşletme Adı)'] }}",
+            "Address (Adres)": "={{ $json['Address (Adres)'] }}",
+            "Phone (Telefon)": "={{ $json['Phone (Telefon)'] }}",
+            "Website (Web Sitesi)": "={{ $json['Website (Web Sitesi)'] }}",
+            "Enlem": "={{ $json.Enlem }}",
+            "Boylam": "={{ $json.Boylam }}",
+            "acilis_saatleri": "={{ $json.acilis_saatleri }}",
+            "googlemapsURL": "={{ $json.googlemapsURL }}",
+            "Rating": "={{ $json.Rating }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name (İşletme Adı)",
+              "displayName": "Name (İşletme Adı)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Address (Adres)",
+              "displayName": "Address (Adres)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone (Telefon)",
+              "displayName": "Phone (Telefon)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Website (Web Sitesi)",
+              "displayName": "Website (Web Sitesi)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Enlem",
+              "displayName": "Enlem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Boylam",
+              "displayName": "Boylam",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "acilis_saatleri",
+              "displayName": "acilis_saatleri",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Rating",
+              "displayName": "Rating",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "googlemapsURL",
+              "displayName": "googlemapsURL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1296,
+        112
+      ],
+      "id": "8c896adf-dfd0-4357-862c-36461223fbdf",
+      "name": "Excel'e Kaydetme",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "2NeOcXlZvGh929Jl",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gelen API response içinden places dizisini al\nconst data = $json.places || [];\n\n// Her place için ayrı item döndür\nconst results = data.map(place => {\n  return {\n    json: {\n      \"Name (İşletme Adı)\": place.displayName?.text || \"\",\n      \"Address (Adres)\": place.formattedAddress || \"\",\n      \"Phone (Telefon)\": place.internationalPhoneNumber || place.nationalPhoneNumber || \"\",\n      \"Website (Web Sitesi)\": place.websiteUri || \"\",\n      \"Enlem\": place.location?.latitude || \"\",\n      \"Boylam\": place.location?.longitude || \"\",\n      \"Rating\": place.rating || \"\",\n      \"googlemapsURL\": place.googleMapsUri || \"\",\n      \"acilis_saatleri\": place.regularOpeningHours?.weekdayDescriptions \n                          ? place.regularOpeningHours.weekdayDescriptions.join(\" | \")\n                          : \"\"\n    }\n  };\n});\n\n// Tüm işletmeleri ayrı ayrı item olarak döndür\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        112
+      ],
+      "id": "4ecc7a17-38e6-48ed-9e13-ce92b85fa798",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Set Region": {
+      "main": [
+        [
+          {
+            "node": "Build Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Query": {
+      "main": [
+        [
+          {
+            "node": "Google TextSearch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google TextSearch": {
+      "main": [
+        [
+          {
+            "node": "Has Next Page?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Next Page?": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait for Pagination",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Pagination": {
+      "main": [
+        [
+          {
+            "node": "Combine Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Combine Results": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "Wait for Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Region",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Excel'e Kaydetme": {
+      "main": [
+        []
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Excel'e Kaydetme",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6d4d91c3-257e-4ea4-9400-be9c6a5c1e90",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5c91c0c6a207a1901958aaf28c11246c32ec74b1093881cc2e10cd612c6dccb2"
+  },
+  "id": "WTwf2sKu0HPVRSuq",
+  "tags": []
+}
